@@ -1,16 +1,20 @@
-name: Maven CI Code Verification
+name: Analytics Service CI
 
 on:
   push:
     branches: [ "main", "master" ]
+    paths:
+      - 'analytics-service/**'
+      - 'pom.xml'
   pull_request:
     branches: [ "main", "master" ]
+    paths:
+      - 'analytics-service/**'
+      - 'pom.xml'
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
-
     steps:
     - uses: actions/checkout@v4
     
@@ -24,5 +28,5 @@ jobs:
     - name: Ensure Maven Wrapper is executable
       run: chmod +x mvnw
         
-    - name: Verify Codebase (Build and Generate Stubs)
-      run: ./mvnw clean package -DskipTests
+    - name: Verify analytics-service Codebase
+      run: ./mvnw clean package -pl analytics-service -am -DskipTests
