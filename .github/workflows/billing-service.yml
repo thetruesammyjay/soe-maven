@@ -7,6 +7,7 @@ on:
       - 'billing-service/**'
       - 'pom.xml'
   pull_request:
+  workflow_dispatch:
     branches: [ "main", "master" ]
     paths:
       - 'billing-service/**'

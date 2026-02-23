@@ -7,6 +7,7 @@ on:
       - 'integration-tests/**'
       - 'pom.xml'
   pull_request:
+  workflow_dispatch:
     branches: [ "main", "master" ]
     paths:
       - 'integration-tests/**'

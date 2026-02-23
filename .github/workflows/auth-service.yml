@@ -7,6 +7,7 @@ on:
       - 'auth-service/**'
       - 'pom.xml'
   pull_request:
+  workflow_dispatch:
     branches: [ "main", "master" ]
     paths:
       - 'auth-service/**'

@@ -7,6 +7,7 @@ on:
       - 'patient-service/**'
       - 'pom.xml'
   pull_request:
+  workflow_dispatch:
     branches: [ "main", "master" ]
     paths:
       - 'patient-service/**'
