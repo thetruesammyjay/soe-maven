@@ -1,0 +1,132 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "MedFlow Patient Management - S3 Static Frontend Hosting with CloudFront CDN (Free Tier Eligible)",
+
+  "Parameters": {
+    "BucketName": {
+      "Type": "String",
+      "Default": "medflow-frontend",
+      "Description": "Name for the S3 bucket hosting the frontend"
+    }
+  },
+
+  "Resources": {
+    "FrontendBucket": {
+      "Type": "AWS::S3::Bucket",
+      "Properties": {
+        "BucketName": { "Ref": "BucketName" },
+        "PublicAccessBlockConfiguration": {
+          "BlockPublicAcls": true,
+          "BlockPublicPolicy": true,
+          "IgnorePublicAcls": true,
+          "RestrictPublicBuckets": true
+        },
+        "WebsiteConfiguration": {
+          "IndexDocument": "index.html",
+          "ErrorDocument": "index.html"
+        }
+      }
+    },
+
+    "FrontendBucketPolicy": {
+      "Type": "AWS::S3::BucketPolicy",
+      "Properties": {
+        "Bucket": { "Ref": "FrontendBucket" },
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Sid": "AllowCloudFrontAccess",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "cloudfront.amazonaws.com"
+              },
+              "Action": "s3:GetObject",
+              "Resource": { "Fn::Sub": "arn:aws:s3:::${BucketName}/*" },
+              "Condition": {
+                "StringEquals": {
+                  "AWS:SourceArn": { "Fn::Sub": "arn:aws:cloudfront::${AWS::AccountId}:distribution/${CloudFrontDistribution}" }
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+
+    "CloudFrontOAC": {
+      "Type": "AWS::CloudFront::OriginAccessControl",
+      "Properties": {
+        "OriginAccessControlConfig": {
+          "Name": "MedFlowOAC",
+          "OriginAccessControlOriginType": "s3",
+          "SigningBehavior": "always",
+          "SigningProtocol": "sigv4"
+        }
+      }
+    },
+
+    "CloudFrontDistribution": {
+      "Type": "AWS::CloudFront::Distribution",
+      "Properties": {
+        "DistributionConfig": {
+          "Origins": [
+            {
+              "DomainName": { "Fn::GetAtt": ["FrontendBucket", "RegionalDomainName"] },
+              "Id": "S3Origin",
+              "OriginAccessControlId": { "Fn::GetAtt": ["CloudFrontOAC", "Id"] },
+              "S3OriginConfig": {
+                "OriginAccessIdentity": ""
+              }
+            }
+          ],
+          "Enabled": true,
+          "DefaultRootObject": "index.html",
+          "DefaultCacheBehavior": {
+            "TargetOriginId": "S3Origin",
+            "ViewerProtocolPolicy": "redirect-to-https",
+            "AllowedMethods": ["GET", "HEAD"],
+            "CachedMethods": ["GET", "HEAD"],
+            "ForwardedValues": {
+              "QueryString": false
+            },
+            "Compress": true
+          },
+          "CustomErrorResponses": [
+            {
+              "ErrorCode": 404,
+              "ResponseCode": 200,
+              "ResponsePagePath": "/index.html",
+              "ErrorCachingMinTTL": 0
+            },
+            {
+              "ErrorCode": 403,
+              "ResponseCode": 200,
+              "ResponsePagePath": "/index.html",
+              "ErrorCachingMinTTL": 0
+            }
+          ],
+          "ViewerCertificate": {
+            "CloudFrontDefaultCertificate": true
+          },
+          "PriceClass": "PriceClass_100",
+          "HttpVersion": "http2"
+        }
+      }
+    }
+  },
+
+  "Outputs": {
+    "BucketName": {
+      "Value": { "Ref": "FrontendBucket" },
+      "Description": "S3 Bucket name for frontend deployment"
+    },
+    "CloudFrontURL": {
+      "Value": { "Fn::GetAtt": ["CloudFrontDistribution", "DomainName"] },
+      "Description": "CloudFront URL to access the frontend"
+    },
+    "DistributionId": {
+      "Value": { "Ref": "CloudFrontDistribution" },
+      "Description": "CloudFront Distribution ID for cache invalidation"
+    }
+  }
+}

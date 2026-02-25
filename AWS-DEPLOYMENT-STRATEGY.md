@@ -1,76 +1,95 @@
-# AWS Cloud Deployment Strategy
+# AWS Free Tier Deployment Guide
 
-This document outlines the exact DevOps pipeline required to successfully deploy the Maven-orchestrated Microservices system to Amazon Web Services (AWS) for your upcoming academic presentation.
+This document provides the exact steps to deploy the Enterprise Patient Management System to AWS Free Tier.
 
-Given the architecture of this project—which heavily relies on Multi-Stage Docker builds and the AWS Cloud Development Kit (CDK)—we will bypass manual server configuration and utilize a modern, enterprise-grade deployment strategy.
+## Architecture
 
-## Phase 1: Preparation (Before the Presentation)
+```
+[Browser] --> [CloudFront CDN] --> [S3 Bucket (Frontend)]
+                                       |
+                                       v (API calls)
+                              [EC2 / ECS Instance]
+                                       |
+                          +------------+------------+
+                          |            |            |
+                    [API Gateway]  [Auth Service]  [Patient Service]
+                          |            |            |
+                    [Billing]    [Analytics]    [PostgreSQL RDS]
+                                       |
+                                    [Kafka]
+```
 
-Before presenting, you must ensure your local environment and AWS account are properly authenticated.
+## Prerequisites
 
-1.  **Create an AWS Account**: Ensure you have an active AWS account with billing/free-tier enabled.
-2.  **Install the AWS CLI**: Download and install the [AWS Command Line Interface](https://aws.amazon.com/cli/).
-3.  **Authenticate the CLI**: Run `aws configure` in your terminal. You will need to provide:
-    *   `AWS Access Key ID` (Generated from AWS IAM Dashboard)
-    *   `AWS Secret Access Key`
-    *   `Default region name` (e.g., `us-east-1`)
-4.  **Install Node.js & AWS CDK**: The infrastructure module requires the CDK command-line tool.
-    *   Install Node.js from their official site.
-    *   Run `npm install -g aws-cdk` to install the CDK.
+1. An active AWS Account (Free Tier eligible)
+2. AWS CLI installed and configured (`aws configure`)
+3. Git and a terminal (bash or PowerShell)
 
-## Phase 2: Building the Artifacts via Maven
+---
 
-Before AWS can run the applications, Maven must transpile the gRPC `.proto` schemas and package the executable `.jar` files.
+## Step 1: One-Command Infrastructure Setup
 
-If you do not have Java 21 or Maven installed locally, **you must rely on the Docker Multi-Stage Builds.**
+From the root of your project, run:
 
-1.  Ensure **Docker Desktop** is running on your presentation machine.
-2.  Open a terminal in the root of the `soe-maven` directory.
-3.  Run the following command to build the Docker images locally:
-    ```bash
-    docker compose build
-    ```
-    *This will trigger the multi-stage Maven build inside the containers, ensuring all dependencies are cached and the Java networking stubs are automatically generated.*
+```bash
+chmod +x deploy/setup-aws.sh
+./deploy/setup-aws.sh
+```
 
-## Phase 3: Infrastructure Deployment (AWS CDK)
+This script will automatically:
+- Deploy an S3 bucket for the frontend
+- Create a CloudFront CDN distribution with HTTPS
+- Upload the frontend files to S3
+- Create ECR repositories for all 5 microservices
+- Print the GitHub Secrets you need to configure
 
-This project contains an `infrastructure` module designed specifically for declarative AWS deployment.
+---
 
-1.  Navigate into the Infrastructure module:
-    ```bash
-    cd infrastructure
-    ```
-2.  **Bootstrap the CDK**: This prepares your AWS account to receive CDK deployments (only required once per AWS account/region):
-    ```bash
-    cdk bootstrap
-    ```
-3.  **Synthesize the CloudFormation Template**: This converts the Java definitions in your infrastructure module into JSON templates AWS can understand:
-    ```bash
-    cdk synth
-    ```
-4.  **Deploy the Topology**: Execute the deployment. The CDK will automatically provision the VPC (Virtual Private Cloud), ECS (Elastic Container Service) clusters, and the RDS (PostgreSQL) databases required for the microservices.
-    ```bash
-    cdk deploy
-    ```
+## Step 2: Configure GitHub Secrets
 
-## Phase 4: Pushing Docker Images to AWS ECR
+After the script completes, go to your repository settings:
 
-Once the infrastructure is active, AWS needs the actual application files to run. We will push the Docker images built in Phase 2 to **Amazon Elastic Container Registry (ECR)**.
+**https://github.com/thetruesammyjay/soe-maven/settings/secrets/actions**
 
-1.  Log in to your AWS Console and navigate to **ECR**.
-2.  Create 5 separate private repositories named:
-    *   `patient-service`
-    *   `billing-service`
-    *   `analytics-service`
-    *   `auth-service`
-    *   `api-gateway`
-3.  Inside each ECR repository, click **"View push commands"**. AWS will provide you with the exact terminal commands required to Tag and Push your local Docker images up to the AWS cloud.
+Add the following secrets (values printed by the setup script):
 
-## Phase 5: The Presentation Talking Points
+| Secret Name | Description |
+|-------------|-------------|
+| `AWS_ACCESS_KEY_ID` | Your IAM Access Key |
+| `AWS_SECRET_ACCESS_KEY` | Your IAM Secret Key |
+| `AWS_REGION` | e.g., `us-east-1` |
+| `S3_BUCKET_NAME` | Printed by the setup script |
+| `CLOUDFRONT_DISTRIBUTION_ID` | Printed by the setup script |
 
-During your presentation, focus the lecturers' attention on the automated CI/CD and IaC aspects of this architecture:
+---
 
-*   **Apache Maven Orchestration**: Explain how Maven manages the complex dependency trees across 7 modules and automatically synthesizes thousands of lines of gRPC networking code using the `protobuf-maven-plugin`.
-*   **Infrastructure as Code (IaC)**: Highlight that the AWS infrastructure wasn't manually clicked together in a console, but systematically defined using the AWS CDK within the `infrastructure` Maven module.
-*   **Multi-Stage Docker Optimization**: Detail how the Dockerfiles utilize the `maven:3.9.9` image to build the artifacts offline (using `mvn dependency:go-offline`), before moving strictly the `.jar` files into lightweight `openjdk` runtime containers.
-*   **Automated Verification**: Show them the `.github/workflows/maven.yml` file, proving that every push to the `main` branch automatically boots a cloud runner to verify the integrity of the Maven compilation lifecycle.
+## Step 3: Automatic Deployments
+
+Once the secrets are configured, the following happens automatically:
+
+- **Push to `frontend/`** --> GitHub Actions syncs files to S3 and invalidates CloudFront cache
+- **Push to any service** --> GitHub Actions builds Docker images and pushes them to ECR
+
+---
+
+## Step 4: Accessing the Application
+
+After deployment, your frontend will be accessible at:
+
+```
+https://<cloudfront-distribution-id>.cloudfront.net
+```
+
+The CloudFront URL is printed by the setup script and shown in the AWS Console under CloudFront Distributions.
+
+---
+
+## Free Tier Coverage
+
+| Service | Free Tier Allowance |
+|---------|-------------------|
+| S3 | 5 GB storage, 20,000 GET requests/month |
+| CloudFront | 1 TB data transfer, 10M requests/month |
+| ECR | 500 MB storage/month |
+| EC2 | 750 hours t2.micro/month (12 months) |
+| RDS | 750 hours db.t3.micro, 20 GB storage (12 months) |
