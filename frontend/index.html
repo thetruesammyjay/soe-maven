@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Enterprise Patient Management System - Secure login portal for healthcare professionals.">
+  <title>Sign In - MedFlow Patient Management</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <div class="login-page">
+    <div class="login-card">
+      <div class="login-brand">
+        <h1>MedFlow</h1>
+        <span>Patient Management</span>
+      </div>
+
+      <h2 class="login-title">Welcome back</h2>
+      <p class="login-subtitle">Sign in to your account to continue.</p>
+
+      <div id="loginAlert" class="alert"></div>
+
+      <form id="loginForm" autocomplete="on">
+        <div class="form-group">
+          <label class="form-label" for="loginEmail">Email address</label>
+          <input class="form-input" type="email" id="loginEmail" name="email" placeholder="you@example.com" required autocomplete="username">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="loginPassword">Password</label>
+          <input class="form-input" type="password" id="loginPassword" name="password" placeholder="Enter your password" required autocomplete="current-password">
+        </div>
+        <button type="submit" id="loginBtn" class="btn btn-primary login-btn">Sign In</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+</body>
+</html>
