@@ -1,11 +1,11 @@
 {
   "AWSTemplateFormatVersion": "2010-09-09",
-  "Description": "MedFlow Patient Management - S3 Static Frontend Hosting with CloudFront CDN (Free Tier Eligible)",
+  "Description": "CareVault Patient Management - S3 Static Frontend Hosting with CloudFront CDN (Free Tier Eligible)",
 
   "Parameters": {
     "BucketName": {
       "Type": "String",
-      "Default": "medflow-frontend",
+      "Default": "CareVault-frontend",
       "Description": "Name for the S3 bucket hosting the frontend"
     }
   },
@@ -57,7 +57,7 @@
       "Type": "AWS::CloudFront::OriginAccessControl",
       "Properties": {
         "OriginAccessControlConfig": {
-          "Name": "MedFlowOAC",
+          "Name": "CareVaultOAC",
           "OriginAccessControlOriginType": "s3",
           "SigningBehavior": "always",
           "SigningProtocol": "sigv4"

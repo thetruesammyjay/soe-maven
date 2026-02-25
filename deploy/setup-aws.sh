@@ -7,13 +7,13 @@
 set -e
 
 REGION=${AWS_REGION:-us-east-1}
-BUCKET_NAME="medflow-frontend-$(date +%s)"
-STACK_NAME="medflow-frontend-stack"
+BUCKET_NAME="CareVault-frontend-$(date +%s)"
+STACK_NAME="CareVault-frontend-stack"
 ECR_SERVICES=("patient-service" "billing-service" "analytics-service" "auth-service" "api-gateway")
 
 echo ""
 echo "=========================================="
-echo "  MedFlow AWS Free Tier Deployment Setup  "
+echo "  CareVault AWS Free Tier Deployment Setup  "
 echo "=========================================="
 echo ""
 
